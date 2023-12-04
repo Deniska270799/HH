@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:80"
+    depends_on:
+      - db
+      - redis
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://$PSQL_USER:$PSQL_PASSWORD@db:5432/$PSQL_NAME
+      - REDIS_URL=redis://redis:6379/0
+    command: uvicorn app.main:app --host 0.0.0.0 --port 80
+    volumes:
+      - './app:/python/app:rw'
+      - './models:/python/models:rw'
+      - './migrations:/python/migrations:rw'
+      - './alembic.ini:/python/alembic.ini:rw'
+      - './config.py:/python/config.py:rw'
+
+  worker:
+    build: .
+    command: celery -A app.redis_celery.celery_worker.celery_app worker --loglevel=info --beat
+    depends_on:
+      - db
+      - redis
+
+  db:
+    env_file: .env
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${PSQL_NAME}
+      POSTGRES_USER: ${PSQL_USER}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+
+  redis:
+    image: redis:alpine
+
+volumes:
+  postgres_data:
+
