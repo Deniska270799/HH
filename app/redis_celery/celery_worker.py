@@ -27,7 +27,7 @@ def fetch_currency_data():
             save_currency_rate(currency, rate)
             exchange_rates[currency] = rate
 
-        redis_instance.setex("currency_data", 6, json.dumps(exchange_rates)) # 10 минут в секундах
+        redis_instance.setex("currency_data", 600, json.dumps(exchange_rates)) # 10 минут в секундах
 
     except requests.exceptions.RequestException as e:
         print(f"Ошибка при запросе к API: {e}")
@@ -39,6 +39,6 @@ def fetch_currency_data():
 celery_app.conf.beat_schedule = {
     "fetch-currency-data-every-15-minutes": {
         "task": "app.redis_celery.celery_worker.fetch_currency_data",
-        "schedule": 9.0,  # 15 минут в секундах
+        "schedule": 900.0,  # 15 минут в секундах
     }
 }
